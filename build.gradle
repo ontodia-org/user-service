@@ -1,0 +1,44 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:1.2.3.RELEASE'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'spring-boot'
+
+version = '1.0'
+
+compileJava {
+    options.encoding = 'UTF-8'
+    sourceCompatibility = 1.8
+}
+
+jar {
+    version =  '0.1.0'
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compile("org.springframework.boot:spring-boot-starter-web")
+    compile("org.springframework.boot:spring-boot-starter-data-mongodb")
+    compile("org.springframework.boot:spring-boot-starter-security")
+    compile("org.springframework.boot:spring-boot-starter-thymeleaf")
+    compile("org.springframework:spring-context-support")
+
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+    compile group: 'com.google.guava', name: 'guava', version: '12.0'
+    compile group: 'org.apache.jena', name: 'jena', version: '2.11.2'
+    compile group: 'org.apache.jena', name: 'jena-arq', version: '2.11.2'
+    compile group: 'com.sun.mail', name: 'javax.mail', version: '1.5.2'
+    compile 'joda-time:joda-time:2.7'
+}
+
