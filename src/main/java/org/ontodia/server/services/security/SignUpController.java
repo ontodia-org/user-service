@@ -53,7 +53,7 @@ public class SignUpController<DTOUserType extends IUserDTO> {
         this.userSearcherByToken = userSearcherByToken;
     }
 
-    // �����������
+    // Registry
     //==================================================================
     //==========================================================
 
@@ -109,7 +109,7 @@ public class SignUpController<DTOUserType extends IUserDTO> {
 
 
 
-    // �������������� ������
+    // Recovery password
     //==================================================================
     //==========================================================
 
@@ -154,7 +154,7 @@ public class SignUpController<DTOUserType extends IUserDTO> {
         }
     }
 
-    // ��������� ����������� � ��������� ������
+    // Invitation
     //==================================================================
     //==========================================================
 
