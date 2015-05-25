@@ -5,5 +5,5 @@ package org.ontodia.server.services.security.interfaces;
  */
 public interface IUserDTO {
     String getUsername();
-    String getEmail();
+    String getPassword();
 }

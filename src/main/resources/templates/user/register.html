@@ -7,10 +7,9 @@
     <meta name="description" content=""/>
     <meta name="author" content=""/>
     <link rel="icon" href="/favicon.ico"/>
-    <title>OntoDia - OWL Diagramming toolkit</title>
+    <title>Register</title>
 
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css" />
-
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootswatch/3.2.0/cerulean/bootstrap.min.css"/>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <!--<script src="../../assets/js/ie10-viewport-bug-workaround.js"></script>-->
 
@@ -63,11 +62,11 @@
                 <input type="submit" tabindex="-1" style="position: absolute; left: -9999px; width: 1px; height: 1px;"/>
             </form>
             <div th:if="${emailConfirmation}" class="formMessage" id="emmConf">
-                <p>Thank you for signing up for OntoDia.</p>
+                <p>Thank you for signing up.</p>
                 <p>A confirmation message has been sent to you with a link you must click on in order to confirm your email.</p>
                 <p>Open your email inbox and look for a message from
-                   <span th:text="${fromEmailAddress}" style="font-weight: bold;">example@example.com</span>
-                   with the subject "OntoDia Signup Request".</p>
+                   <span th:text="${fromEmailAddress}" style="font-weight: bold;">example@example.com</span>.
+                </p>
             </div>
         </div>
         <div th:unless="${emailConfirmation}" class="modal-footer">
@@ -79,7 +78,8 @@
 <!-- Bootstrap core JavaScript
 ================================================== -->
 <!-- Placed at the end of the document so the pages load faster -->
-<script src="js/jquery/jquery-2.1.3.js"></script>
+<!--<script src="js/jquery/jquery-2.1.3.js"></script>-->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
 <!-- Include all compiled plugins (below), or include individual files as needed -->
 <!-- Latest compiled and minified JavaScript -->
 <script>

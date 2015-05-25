@@ -34,6 +34,7 @@ public class SignUpController<DTOUserType extends IUserDTO> {
     private MailSender mailSender;
     private String mailFromAddress;
     private String mailDomain;
+    private MessageProviderForMail messageProvider;
 
     @Autowired
     public SignUpController(
@@ -43,6 +44,7 @@ public class SignUpController<DTOUserType extends IUserDTO> {
             MailSender mailSender,
             @Value("${mailsender.from}") String mailFromAddress,
             @Value("${mailsender.domain}") String mailDomain,
+            MessageProviderForMail messageProvider,
             IUserSearcherByToken userSearcherByToken) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -50,6 +52,7 @@ public class SignUpController<DTOUserType extends IUserDTO> {
         this.mailSender = mailSender;
         this.mailFromAddress = mailFromAddress;
         this.mailDomain = mailDomain;
+        this.messageProvider = messageProvider;
         this.userSearcherByToken = userSearcherByToken;
     }
 
@@ -80,19 +83,18 @@ public class SignUpController<DTOUserType extends IUserDTO> {
     }
 
     private void sendConfirmationEmailTo(UserDetailsWithTokens user) throws Exception {
+
         String activationLink = String.format("%s/activate/%s", mailDomain,
                 UriUtils.encodeQueryParam(user.getConfirmationToken(), "utf-8"));
+
+        String subj = this.messageProvider.getChangePasswordSubject();
+        String msg = this.messageProvider.getConfirmationMessage(user,activationLink);
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(mailFromAddress);
         message.setTo(user.getUsername());
-        message.setSubject("OntoDia Signup Request");
-        message.setText(String.format(
-                "Welcome to OntoDia, the fist and only online OWL diagramming tool for everyone.\r\n\r\n" +
-                        "To activate your account click on the following link:\r\n" +
-                        "%s\r\n\r\n" +
-                        "Best Regards,\r\nOntoDia Team\r\n",
-                activationLink));
+        message.setSubject(subj);
+        message.setText(msg);
 
         mailSender.send(message);
     }
@@ -130,15 +132,14 @@ public class SignUpController<DTOUserType extends IUserDTO> {
         String changePasswordLink = String.format("%s/changePassword/%s", mailDomain,
                 UriUtils.encodeQueryParam(user.getInvitationToken(), "utf-8"));
 
+        String subj = this.messageProvider.getChangePasswordSubject();
+        String msg = this.messageProvider.getChangePasswordMessage(user, changePasswordLink);
+
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(mailFromAddress);
         message.setTo(user.getUsername());
-        message.setSubject("OntoDia Invitation Request");
-        message.setText(String.format(
-                "To change password click on the following link:\r\n" +
-                        "%s\r\n\r\n" +
-                        "Best Regards,\r\nOntoDia Team\r\n",
-                changePasswordLink));
+        message.setSubject(subj);
+        message.setText(msg);
 
         mailSender.send(message);
         user.setEmailConfirmed(false);
@@ -180,17 +181,14 @@ public class SignUpController<DTOUserType extends IUserDTO> {
         String invitationLink = String.format("%s/takeInvitation/%s", mailDomain,
                 UriUtils.encodeQueryParam(user.getInvitationToken(), "utf-8"));
 
+        String subj = this.messageProvider.getInvitationSubject();
+        String msg = this.messageProvider.getInvitationMessage(user, invitationLink,sender);
+
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(mailFromAddress);
         message.setTo(user.getUsername());
-        message.setSubject("OntoDia Invitation Request");
-        message.setText(String.format(
-                "Welcome to OntoDia, the fist and only online OWL diagramming tool for everyone.\r\n\r\n" +
-                        "User %s has shared with you a diagram." +
-                        "To view the diagram click on the following link:\r\n" +
-                        "%s\r\n\r\n" +
-                        "Best Regards,\r\nOntoDia Team\r\n",
-                sender,invitationLink));
+        message.setSubject(subj);
+        message.setText(msg);
 
         mailSender.send(message);
         userRepository.updateUser(user);
@@ -213,8 +211,8 @@ public class SignUpController<DTOUserType extends IUserDTO> {
             UserDetailsWithTokens existingUser = (UserDetailsWithTokens)user;
             if(!existingUser.isEmailConfirmed()) {
                 existingUser.setEmailConfirmed(true);
-                userRepository.changePassword(existingUser.getPassword(), passwordEncoder.encode(password));
                 userRepository.updateUser(existingUser);
+                userRepository.changePassword(existingUser.getPassword(), passwordEncoder.encode(password));
             }
             return true;
         }else {
