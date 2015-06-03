@@ -82,9 +82,9 @@ public abstract class SignUpMVCControllerBase<UserDTO extends IUserDTO> {
         return model;
     }
 
-    @RequestMapping(value = "/changePassword/{token}", method = RequestMethod.GET)
-    public String changePassword(@PathVariable String token, HttpServletRequest request) {
-        signUpController.changePassword(token,request);
+    @RequestMapping(value = "/authenticateByForgotPasswordToken/{token}", method = RequestMethod.GET)
+    public String authenticateByForgotPasswordToken(@PathVariable String token, HttpServletRequest request) {
+        signUpController.authenticateByForgotPasswordToken(token,request);
         return config.setPwdRedirect;
     }
 
@@ -92,9 +92,9 @@ public abstract class SignUpMVCControllerBase<UserDTO extends IUserDTO> {
     //==================================================================
     //==========================================================
 
-    @RequestMapping(value = "/takeInvitation/{token}", method = RequestMethod.GET)
-    public String takeInvitation(@PathVariable String token, HttpServletRequest request) {
-        signUpController.takeInvitation(token,request);
+    @RequestMapping(value = "/authenticateByInvitationToken/{token}", method = RequestMethod.GET)
+    public String authenticateByInvitationToken(@PathVariable String token, HttpServletRequest request) {
+        signUpController.authenticateByInvitationToken(token,request);
         return config.setPwdRedirect;
     }
 

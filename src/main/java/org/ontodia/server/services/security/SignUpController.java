@@ -22,8 +22,7 @@ import java.util.UUID;
  * To use this as rest controller, just extend @RestController @RequestMapping SignUpRest extends SignUpController<DTOType> and you're done!
  * @param <DTOUserType>
  */
-//@RestController
-//@RequestMapping("/users")
+
 public class SignUpController<DTOUserType extends IUserDTO> {
 
     private IUserDetailManager userRepository;
@@ -36,14 +35,13 @@ public class SignUpController<DTOUserType extends IUserDTO> {
     private String mailDomain;
     private MessageProviderForMail messageProvider;
 
-    @Autowired
     public SignUpController(
             IUserDetailManager userRepository,
             PasswordEncoder passwordEncoder,
             UserDetailsService userDetailsService,
             MailSender mailSender,
-            @Value("${mailsender.from}") String mailFromAddress,
-            @Value("${mailsender.domain}") String mailDomain,
+            String mailFromAddress,
+            String mailDomain,
             MessageProviderForMail messageProvider,
             IUserSearcherByToken userSearcherByToken) {
         this.userRepository = userRepository;
@@ -60,8 +58,7 @@ public class SignUpController<DTOUserType extends IUserDTO> {
     //==================================================================
     //==========================================================
 
-    @RequestMapping(value = "/register", method = RequestMethod.POST)
-    public boolean register(@RequestBody DTOUserType user) throws Exception {
+    public boolean register(DTOUserType user) throws Exception {
 
         if (userRepository.userExists(user.getUsername())) {
             return false;
@@ -84,11 +81,8 @@ public class SignUpController<DTOUserType extends IUserDTO> {
 
     private void sendConfirmationEmailTo(UserDetailsWithTokens user) throws Exception {
 
-        String activationLink = String.format("%s/activate/%s", mailDomain,
-                UriUtils.encodeQueryParam(user.getConfirmationToken(), "utf-8"));
-
-        String subj = this.messageProvider.getChangePasswordSubject();
-        String msg = this.messageProvider.getConfirmationMessage(user,activationLink);
+        String subj = this.messageProvider.getConfirmationSubject();
+        String msg = this.messageProvider.getConfirmationMessage(user, mailDomain);
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(mailFromAddress);
@@ -99,41 +93,31 @@ public class SignUpController<DTOUserType extends IUserDTO> {
         mailSender.send(message);
     }
 
-    @RequestMapping(value = "/activate/{token}", method = RequestMethod.GET)
-    public void activate(@PathVariable String token, HttpServletRequest request) {
-        UserDetailsWithTokens userDetails = userSearcherByToken.findByConfirmationToken(token);
-        if (userDetails != null && !userDetails.isEmailConfirmed()) {
-            userDetails.setEmailConfirmed(true);
-            userRepository.updateUser(userDetails);
-            authenticateUser(userDetails, request);
-        }
-    }
-
-
-
     // Recovery password
     //==================================================================
     //==========================================================
 
-    @RequestMapping(value = "/forgotPassword", method = RequestMethod.POST)
-    public boolean forgotPassword(@RequestParam("email") String email) throws Exception {
+    public boolean forgotPassword(String email) throws Exception {
         if (!userRepository.userExists(email)) {
             return false;
         } else {
             UserDetails existingUser = userRepository.loadUserByUsername(email);
-            createInvitationToken((ITokenStorage)existingUser);
+            createForgotPasswordToken((ITokenStorage)existingUser);
             userRepository.updateUser(existingUser);
-            sendRequestForChangePassword((UserDetailsWithTokens)existingUser);
+            sendRequestForChangePassword((UserDetailsWithTokens) existingUser);
             return true;
         }
     }
 
-    private void sendRequestForChangePassword(UserDetailsWithTokens user) throws Exception {
-        String changePasswordLink = String.format("%s/changePassword/%s", mailDomain,
-                UriUtils.encodeQueryParam(user.getInvitationToken(), "utf-8"));
+    private void createForgotPasswordToken(ITokenStorage user) {
+        if (user.getForgotPasswordToken() == null) {
+            user.setForgotPasswordToken(UUID.randomUUID().toString());
+        }
+    }
 
+    private void sendRequestForChangePassword(UserDetailsWithTokens user) throws Exception {
         String subj = this.messageProvider.getChangePasswordSubject();
-        String msg = this.messageProvider.getChangePasswordMessage(user, changePasswordLink);
+        String msg = this.messageProvider.getChangePasswordMessage(user, mailDomain);
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(mailFromAddress);
@@ -146,21 +130,11 @@ public class SignUpController<DTOUserType extends IUserDTO> {
         userRepository.updateUser(user);
     }
 
-    @RequestMapping(value = "/changePassword/{token}", method = RequestMethod.GET)
-    public void changePassword(@PathVariable String token, HttpServletRequest request) {
-        UserDetailsWithTokens userInfo = userSearcherByToken.findByForgotPasswordToken(token);
-        if (userInfo != null && !userInfo.isEmailConfirmed()) {
-            userRepository.updateUser(userInfo);
-            authenticateUser(userInfo, request);
-        }
-    }
-
     // Invitation
     //==================================================================
     //==========================================================
 
-    @RequestMapping(value = "/inviteUser", method = RequestMethod.POST)
-    public boolean inviteUser(@RequestParam("email") String email) throws Exception {
+    public boolean inviteUser(String email) throws Exception {
         User user = getUser();
         if(user==null) return false;
 
@@ -178,11 +152,10 @@ public class SignUpController<DTOUserType extends IUserDTO> {
     }
 
     private void sendInvitationTo(UserDetailsWithTokens user, String sender) throws Exception {
-        String invitationLink = String.format("%s/takeInvitation/%s", mailDomain,
-                UriUtils.encodeQueryParam(user.getInvitationToken(), "utf-8"));
+
 
         String subj = this.messageProvider.getInvitationSubject();
-        String msg = this.messageProvider.getInvitationMessage(user, invitationLink,sender);
+        String msg = this.messageProvider.getInvitationMessage(user, mailDomain, sender);
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(mailFromAddress);
@@ -194,17 +167,8 @@ public class SignUpController<DTOUserType extends IUserDTO> {
         userRepository.updateUser(user);
     }
 
-    @RequestMapping(value = "/takeInvitation/{token}", method = RequestMethod.GET)
-    public void takeInvitation(@PathVariable String token, HttpServletRequest request) {
-        UserDetailsWithTokens userDetails = userSearcherByToken.findByInvitationToken(token);
-        if (userDetails != null && !userDetails.isEmailConfirmed()) {
-            userRepository.updateUser(userDetails);
-            authenticateUser(userDetails, request);
-        }
-    }
 
-    @RequestMapping(value = "/setPassword", method = RequestMethod.POST)
-    public boolean setPassword(@RequestParam("newPassword") String password) throws Exception {
+    public boolean setPassword(String password) throws Exception {
         User user = getUser();
 
         if(user!=null) {
@@ -220,9 +184,39 @@ public class SignUpController<DTOUserType extends IUserDTO> {
         }
     }
 
-    // ��������������
+    // Authentication
     //==================================================================
     //==========================================================
+
+    public boolean activate(String token, HttpServletRequest request) {
+        UserDetailsWithTokens userDetails = userSearcherByToken.findByConfirmationToken(token);
+        if (userDetails != null && !userDetails.isEmailConfirmed()) {
+            userDetails.setEmailConfirmed(true);
+            userRepository.updateUser(userDetails);
+            authenticateUser(userDetails, request);
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    public boolean authenticateByForgotPasswordToken(String token, HttpServletRequest request) {
+        UserDetailsWithTokens userInfo = userSearcherByToken.findByForgotPasswordToken(token);
+        if (userInfo != null && !userInfo.isEmailConfirmed()) {
+            authenticateUser(userInfo, request);
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    public void authenticateByInvitationToken(String token, HttpServletRequest request) {
+        UserDetailsWithTokens userDetails = userSearcherByToken.findByInvitationToken(token);
+        if (userDetails != null && !userDetails.isEmailConfirmed()) {
+            userRepository.updateUser(userDetails);
+            authenticateUser(userDetails, request);
+        }
+    }
 
     private void authenticateUser(UserDetails user, HttpServletRequest request) {
         request.getSession(); // generate session if one doesn't exist
