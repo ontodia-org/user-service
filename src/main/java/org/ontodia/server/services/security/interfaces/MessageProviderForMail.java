@@ -7,11 +7,11 @@ import org.springframework.security.core.userdetails.UserDetails;
  */
 public interface MessageProviderForMail {
     String getConfirmationSubject();
-    String getConfirmationMessage(UserDetailsWithTokens user, String domain);
+    String getConfirmationMessage(UserDetailsWithTokens user, String link);
 
     String getChangePasswordSubject();
-    String getChangePasswordMessage(UserDetailsWithTokens user, String domain);
+    String getChangePasswordMessage(UserDetailsWithTokens user, String link);
 
     String getInvitationSubject();
-    String getInvitationMessage(UserDetailsWithTokens user, String domain, String from);
+    String getInvitationMessage(UserDetailsWithTokens user, String link, String from);
 }

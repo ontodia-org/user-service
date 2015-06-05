@@ -15,8 +15,8 @@ public class MessageProviderForMVCControllerBase implements MessageProviderForMa
     }
 
     @Override
-    public String getConfirmationMessage(UserDetailsWithTokens user, String domain) {
-        return "To activate your account click on the following link:\r\n"+ domain +"/activate/"+user.getConfirmationToken()+"\r\n\r\n";
+    public String getConfirmationMessage(UserDetailsWithTokens user, String link) {
+        return "To activate your account click on the following link:\r\n"+ link +user.getConfirmationToken()+"\r\n\r\n";
     }
 
     @Override
@@ -25,8 +25,8 @@ public class MessageProviderForMVCControllerBase implements MessageProviderForMa
     }
 
     @Override
-    public String getChangePasswordMessage(UserDetailsWithTokens user, String domain) {
-        return "To change password click on the following link:\r\n"+ domain +"/authenticateByForgotPasswordToken/"+user.getForgotPasswordToken()+"\r\n\r\n";
+    public String getChangePasswordMessage(UserDetailsWithTokens user, String link) {
+        return "To change password click on the following link:\r\n"+ link +user.getForgotPasswordToken()+"\r\n\r\n";
     }
 
     @Override
@@ -35,7 +35,7 @@ public class MessageProviderForMVCControllerBase implements MessageProviderForMa
     }
 
     @Override
-    public String getInvitationMessage(UserDetailsWithTokens user, String domain, String from) {
-        return "User " + from + " send invitation to you. Click on the following link:\r\n"+ domain +"/authenticateByInvitationToken/"+user.getInvitationToken()+"\r\n\r\n";
+    public String getInvitationMessage(UserDetailsWithTokens user, String link, String from) {
+        return "User " + from + " send invitation to you. Click on the following link:\r\n"+link+user.getInvitationToken()+"\r\n\r\n";
     }
 }

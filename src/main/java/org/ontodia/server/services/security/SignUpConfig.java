@@ -1,13 +1,17 @@
 package org.ontodia.server.services.security;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailSender;
 import org.springframework.stereotype.Component;
 
 /**
  * Created by yuricus on 19.05.15.
  */
 @Component
-public class SignUpMVCControllerConfig {
+public class SignUpConfig {
+    @Value("${userservice.domain:http://localhost:8080}")
+    String domain;
+
     @Value("${userservice.view.register:user/register}")
     public String registerView;
 
@@ -22,4 +26,13 @@ public class SignUpMVCControllerConfig {
 
     @Value("${userservice.view.restorePwd:user/forgotPassword}")
     public String restorePwdView;
+
+    @Value("${userservice.activatedLink:/activate/}")
+    public String activatedLink;
+
+    @Value("${userservice.recoveryLink:/authenticateByForgotPasswordToken/}")
+    public String recoveryLink;
+
+    @Value("${userservice.invitationLink:/authenticateByInvitationToken/")
+    public String invitationLink;
 }
