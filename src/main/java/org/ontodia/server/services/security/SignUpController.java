@@ -64,6 +64,7 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
             throw new UserAlreadyExistsException("User with username "+user.getUsername()+" already exists!");
 
         UserDetailsWithTokens newUser = userRepository.createUserFromDTO(user);
+        if(newUser==null) throw new Exception("var newUser is null!");
         createConfirmationToken(newUser);
         userRepository.createUser(newUser);
         sendConfirmationEmailTo(newUser);
