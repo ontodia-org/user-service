@@ -151,7 +151,7 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
     // Invitation
     //==================================================================
     //==========================================================
-
+    //@RequestMapping(value = "/inviteUser", method = RequestMethod.POST)
     public boolean inviteUser(String email) throws Exception {
         User user = getUser();
         if(user==null) return false;
@@ -160,6 +160,15 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
         createInvitationToken(userDetails);
         userRepository.createUser(userDetails);
         sendInvitationTo(userDetails, user.getUsername());
+        return true;
+    }
+
+    //@RequestMapping(value = "/simpleInviteUser", method = RequestMethod.POST)
+    public boolean inviteExistingUser(@RequestParam("email") String email) throws Exception {
+        User user = getUser();
+        if(user==null) return false;
+
+        sendSimpleInvitationTo(email, user.getUsername());
         return true;
     }
 
@@ -181,6 +190,22 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
 
         mailSender.send(message);
         userRepository.updateUser(user);
+    }
+
+    private void sendSimpleInvitationTo(String user, String sender) throws Exception {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(mailFromAddress);
+        message.setTo(user);
+        message.setSubject("OntoDia Invitation");
+        message.setText(String.format(
+                "Welcome to OntoDia, the fist and only online OWL diagramming tool for everyone.\r\n\r\n" +
+                        "User %s has shared with you a data." +
+                        "To view the data visit our site:\r\n" +
+                        "%s\r\n\r\n" +
+                        "Best Regards,\r\nOntoDia Team\r\n",
+                sender, config.domain));
+
+        mailSender.send(message);
     }
 
     @RequestMapping(value = "/setPassword", method = RequestMethod.POST)
