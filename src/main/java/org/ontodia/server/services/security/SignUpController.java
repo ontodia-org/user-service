@@ -199,8 +199,8 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
         message.setSubject("OntoDia Invitation");
         message.setText(String.format(
                 "Welcome to OntoDia, the fist and only online OWL diagramming tool for everyone.\r\n\r\n" +
-                        "User %s has shared with you a data." +
-                        "To view the data visit our site:\r\n" +
+                        "User %s has shared a data with you." +
+                        "To view the data source please sign in and find it under Diagrams tab.:\r\n" +
                         "%s\r\n\r\n" +
                         "Best Regards,\r\nOntoDia Team\r\n",
                 sender, config.domain));

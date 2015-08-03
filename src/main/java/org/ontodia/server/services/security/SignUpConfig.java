@@ -33,6 +33,6 @@ public class SignUpConfig {
     @Value("${userservice.recoveryLink:/authenticateByForgotPasswordToken/}")
     public String recoveryLink;
 
-    @Value("${userservice.invitationLink:/authenticateByInvitationToken/")
+    @Value("${userservice.invitationLink:/authenticateByInvitationToken/}")
     public String invitationLink;
 }
