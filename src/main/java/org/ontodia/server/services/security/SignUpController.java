@@ -1,6 +1,7 @@
 package org.ontodia.server.services.security;
 
 import org.ontodia.server.services.security.interfaces.*;
+import org.springframework.mail.MailException;
 import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.access.AccessDeniedException;
@@ -21,7 +22,6 @@ import java.util.UUID;
  * To use this as rest controller, just extend @RestController @RequestMapping SignUpRest extends SignUpController<DTOType> and you're done!
  * @param <DTOUserType>
  */
-
 public abstract class SignUpController<DTOUserType extends IUserDTO> {
 
     private final SignUpConfig config;
@@ -78,7 +78,6 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
     }
 
     private void sendConfirmationEmailTo(UserDetailsWithTokens user) throws Exception {
-
         String subj = this.messageProvider.getConfirmationSubject();
         String msg = this.messageProvider.getConfirmationMessage(user, config.domain + config.activatedLink);
 
@@ -148,28 +147,15 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
             authenticateUser(userDetails, request);
     }
 
-    // Invitation
-    //==================================================================
-    //==========================================================
-    //@RequestMapping(value = "/inviteUser", method = RequestMethod.POST)
-    public boolean inviteUser(String email) throws Exception {
-        User user = getUser();
-        if(user==null) return false;
-
-        UserDetailsWithTokens userDetails = userRepository.createUserFromEmail(email);
+    public void inviteUser(String userEmail, String senderEmail) throws MailException {
+        UserDetailsWithTokens userDetails = userRepository.createUserFromEmail(userEmail);
         createInvitationToken(userDetails);
         userRepository.createUser(userDetails);
-        sendInvitationTo(userDetails, user.getUsername());
-        return true;
+        sendInvitationTo(userDetails, senderEmail);
     }
 
-    //@RequestMapping(value = "/simpleInviteUser", method = RequestMethod.POST)
-    public boolean inviteExistingUser(@RequestParam("email") String email) throws Exception {
-        User user = getUser();
-        if(user==null) return false;
-
-        sendSimpleInvitationTo(email, user.getUsername());
-        return true;
+    public void inviteExistingUser(String userEmail, String senderEmail) throws MailException {
+        sendSimpleInvitationTo(userEmail, senderEmail);
     }
 
     private void createInvitationToken(ITokenStorage user) {
@@ -178,9 +164,10 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
         }
     }
 
-    private void sendInvitationTo(UserDetailsWithTokens user, String sender) throws Exception {
+    private void sendInvitationTo(UserDetailsWithTokens user, String senderEmail) throws MailException {
         String subj = this.messageProvider.getInvitationSubject();
-        String msg = this.messageProvider.getInvitationMessage(user, config.domain + config.invitationLink, sender);
+        String msg = this.messageProvider.getInvitationMessage(
+                user, config.domain + config.invitationLink, senderEmail);
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(mailFromAddress);
@@ -192,26 +179,25 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
         userRepository.updateUser(user);
     }
 
-    private void sendSimpleInvitationTo(String user, String sender) throws Exception {
+    private void sendSimpleInvitationTo(String userEmail, String senderEmail) throws MailException {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(mailFromAddress);
-        message.setTo(user);
+        message.setTo(userEmail);
         message.setSubject("OntoDia Invitation");
         message.setText(String.format(
                 "Welcome to OntoDia, the fist and only online OWL diagramming tool for everyone.\r\n\r\n" +
-                        "User %s has shared a data with you." +
-                        "To view the data source please sign in and find it under Diagrams tab.:\r\n" +
-                        "%s\r\n\r\n" +
-                        "Best Regards,\r\nOntoDia Team\r\n",
-                sender, config.domain));
+                "User %s has shared a data with you." +
+                "To view the data source please sign in and find it under Diagrams tab:\r\n" +
+                "%s\r\n\r\n" +
+                "Best Regards,\r\nOntoDia Team\r\n",
+                senderEmail, config.domain));
 
         mailSender.send(message);
     }
 
     @RequestMapping(value = "/setPassword", method = RequestMethod.POST)
-    public void setPassword(@RequestParam("newPassword")String password) throws Exception {
+    public void setPassword(@RequestParam("newPassword") String password) throws Exception {
         User user = getUser();
-        if(user==null) new AccessDeniedException("User not authenticated!");
         UserDetailsWithTokens existingUser = (UserDetailsWithTokens)user;
         if (existingUser.isEmailConfirmed()) throw new BadLinkException("Password already changed by this link!");
         existingUser.setEmailConfirmed(true);
@@ -221,7 +207,7 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
 
     @RequestMapping(value = "/authenticateByInvitationToken", method = RequestMethod.POST)
     @ResponseBody
-    public void authenticateByInvitationToken(@RequestParam("token")String token, HttpServletRequest request) throws Exception  {
+    public void authenticateByInvitationToken(@RequestParam("token") String token, HttpServletRequest request) throws Exception  {
         UserDetailsWithTokens userDetails = userSearcherByToken.findByInvitationToken(token);
         if (userDetails == null) throw new UserNotFoundException("Bad token!");
         if (userDetails.isEmailConfirmed()) throw new BadLinkException("Link already used!");
@@ -231,8 +217,6 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
 
     // Authentication
     //==================================================================
-    //==========================================================
-
 
     private void authenticateUser(UserDetails user, HttpServletRequest request) {
         request.getSession(); // generate session if one doesn't exist
@@ -253,10 +237,14 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
 
     private User getUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if(!authentication.getPrincipal().equals("anonymousUser")) {
+        if (authentication == null) {
+            throw new AccessDeniedException("Cannot get Authentication (user isn't signed in?)");
+        }
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof User) {
             return (User) authentication.getPrincipal();
-        }else{
-            return null;
+        } else {
+            throw new AccessDeniedException("Cannot get User because user is anonymous");
         }
     }
 }

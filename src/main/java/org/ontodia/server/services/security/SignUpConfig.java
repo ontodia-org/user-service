@@ -1,15 +1,11 @@
 package org.ontodia.server.services.security;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailSender;
 import org.springframework.stereotype.Component;
 
-/**
- * Created by yuricus on 19.05.15.
- */
 @Component
 public class SignUpConfig {
-    @Value("${userservice.domain:http://localhost:8080}")
+    @Value("${userservice.domain:}")
     String domain;
 
     @Value("${userservice.view.register:user/register}")

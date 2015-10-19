@@ -4,14 +4,11 @@ import org.ontodia.server.services.security.interfaces.MessageProviderForMail;
 import org.ontodia.server.services.security.interfaces.UserDetailsWithTokens;
 import org.springframework.stereotype.Component;
 
-/**
- * Created by drazdyakonov on 03.06.2015.
- */
 @Component
 public class MessageProviderForMVCControllerBase implements MessageProviderForMail {
     @Override
     public String getConfirmationSubject() {
-        return new String("SignUp request");
+        return "Sign Up Request";
     }
 
     @Override
@@ -21,7 +18,7 @@ public class MessageProviderForMVCControllerBase implements MessageProviderForMa
 
     @Override
     public String getChangePasswordSubject() {
-        return new String("Change password Request");
+        return "Change Password Request";
     }
 
     @Override
@@ -31,11 +28,13 @@ public class MessageProviderForMVCControllerBase implements MessageProviderForMa
 
     @Override
     public String getInvitationSubject() {
-        return new String("Invitation Request");
+        return "Invitation Request";
     }
 
     @Override
-    public String getInvitationMessage(UserDetailsWithTokens user, String link, String from) {
-        return "User " + from + " send invitation to you. Click on the following link:\r\n"+link+user.getInvitationToken()+"\r\n\r\n";
+    public String getInvitationMessage(UserDetailsWithTokens user, String link, String senderEmail) {
+        return String.format(
+                "User %s send invitation to you. Click on the following link:\r\n%s\r\n\r\n",
+                senderEmail, link+user.getInvitationToken());
     }
 }
