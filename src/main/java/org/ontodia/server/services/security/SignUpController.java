@@ -11,7 +11,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,13 +18,14 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.UUID;
 
 /**
- * To use this as rest controller, just extend @RestController @RequestMapping SignUpRest extends SignUpController<DTOType> and you're done!
+ * To use this as rest controller, just extend
+ * <code>@RestController @RequestMapping SignUpRest extends SignUpController<DTOType> and you're done.</code>
  * @param <DTOUserType>
  */
 public abstract class SignUpController<DTOUserType extends IUserDTO> {
 
     private final SignUpConfig config;
-    private IUserDetailManager userRepository;
+    private IUserDetailManager<? super DTOUserType> userRepository;
     private PasswordEncoder passwordEncoder;
     private UserDetailsService userDetailsService;
     private IUserSearcherByToken userSearcherByToken;
@@ -35,7 +35,7 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
     private MessageProviderForMail messageProvider;
 
     public SignUpController(
-            IUserDetailManager userRepository,
+            IUserDetailManager<? super DTOUserType> userRepository,
             PasswordEncoder passwordEncoder,
             UserDetailsService userDetailsService,
             MailSender mailSender,
@@ -78,24 +78,17 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
     }
 
     private void sendConfirmationEmailTo(UserDetailsWithTokens user) throws Exception {
-        String subj = this.messageProvider.getConfirmationSubject();
-        String msg = this.messageProvider.getConfirmationMessage(user, config.domain + config.activatedLink);
-
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(mailFromAddress);
-        message.setTo(user.getUsername());
-        message.setSubject(subj);
-        message.setText(msg);
-
-        mailSender.send(message);
+        ComposedMessage composedMessage = messageProvider.composeConfirmation(
+                user, config.domain + config.activatedLink);
+        sendMailMessage(user, composedMessage);
     }
 
     @RequestMapping(value = "/activate", method = RequestMethod.POST)
     @ResponseBody
-    public void activate(@RequestParam("token")String token, HttpServletRequest request) throws Exception {
+    public void activate(@RequestParam("token") String token, HttpServletRequest request) throws Exception {
         UserDetailsWithTokens userDetails = userSearcherByToken.findByConfirmationToken(token);
-        if (userDetails == null) throw new UserNotFoundException("Bad token!");
-        if (userDetails.isEmailConfirmed()) throw new BadLinkException("User already activated!");
+        if (userDetails == null) { throw new UserNotFoundException("Invalid activation token"); }
+        if (userDetails.isEmailConfirmed()) { throw new BadLinkException("User email already confirmed"); }
         userDetails.setEmailConfirmed(true);
         userRepository.updateUser(userDetails);
         authenticateUser(userDetails, request);
@@ -112,7 +105,7 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
             createForgotPasswordToken((ITokenStorage) existingUser);
             userRepository.updateUser(existingUser);
             sendRequestForChangePassword((UserDetailsWithTokens) existingUser);
-        }catch (Exception e){
+        } catch (Exception e){
             throw new UserNotFoundException(e);
         }
     }
@@ -124,16 +117,9 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
     }
 
     private void sendRequestForChangePassword(UserDetailsWithTokens user) throws Exception {
-        String subj = this.messageProvider.getChangePasswordSubject();
-        String msg = this.messageProvider.getChangePasswordMessage(user, config.domain + config.recoveryLink);
-
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(mailFromAddress);
-        message.setTo(user.getUsername());
-        message.setSubject(subj);
-        message.setText(msg);
-
-        mailSender.send(message);
+        ComposedMessage composedMessage = this.messageProvider.composeChangePassword(
+                user, config.domain + config.recoveryLink);
+        sendMailMessage(user, composedMessage);
         user.setEmailConfirmed(false);
         userRepository.updateUser(user);
     }
@@ -154,8 +140,9 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
         sendInvitationTo(userDetails, senderEmail);
     }
 
-    public void inviteExistingUser(String userEmail, String senderEmail) throws MailException {
-        sendSimpleInvitationTo(userEmail, senderEmail);
+    public void inviteExistingUser(String userEmail, ComposedMessage message) throws MailException {
+        UserDetails user = userRepository.loadUserByUsername(userEmail);
+        sendMailMessage(user, message);
     }
 
     private void createInvitationToken(ITokenStorage user) {
@@ -165,34 +152,22 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
     }
 
     private void sendInvitationTo(UserDetailsWithTokens user, String senderEmail) throws MailException {
-        String subj = this.messageProvider.getInvitationSubject();
-        String msg = this.messageProvider.getInvitationMessage(
+        ComposedMessage composedMessage = this.messageProvider.composeInvitation(
                 user, config.domain + config.invitationLink, senderEmail);
-
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(mailFromAddress);
-        message.setTo(user.getUsername());
-        message.setSubject(subj);
-        message.setText(msg);
-
-        mailSender.send(message);
+        sendMailMessage(user, composedMessage);
         userRepository.updateUser(user);
     }
 
-    private void sendSimpleInvitationTo(String userEmail, String senderEmail) throws MailException {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(mailFromAddress);
-        message.setTo(userEmail);
-        message.setSubject("OntoDia Invitation");
-        message.setText(String.format(
-                "Welcome to OntoDia, the fist and only online OWL diagramming tool for everyone.\r\n\r\n" +
-                "User %s has shared a data with you." +
-                "To view the data source please sign in and find it under Diagrams tab:\r\n" +
-                "%s\r\n\r\n" +
-                "Best Regards,\r\nOntoDia Team\r\n",
-                senderEmail, config.domain));
+    private void sendMailMessage(UserDetails user, ComposedMessage message) {
+        ComposedMessage formattedMessage = messageProvider.formatMailStructure(user, message);
 
-        mailSender.send(message);
+        SimpleMailMessage mailMessage = new SimpleMailMessage();
+        mailMessage.setFrom(mailFromAddress);
+        mailMessage.setTo(user.getUsername());
+        mailMessage.setSubject(formattedMessage.getSubject());
+        mailMessage.setText(formattedMessage.getBody());
+
+        mailSender.send(mailMessage);
     }
 
     @RequestMapping(value = "/setPassword", method = RequestMethod.POST)
@@ -244,7 +219,7 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
         if (principal instanceof User) {
             return (User) authentication.getPrincipal();
         } else {
-            throw new AccessDeniedException("Cannot get User because user is anonymous");
+            throw new AccessDeniedException("Cannot get User object because user is anonymous");
         }
     }
 }

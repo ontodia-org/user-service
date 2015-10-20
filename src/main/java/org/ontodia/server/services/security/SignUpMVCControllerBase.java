@@ -13,12 +13,15 @@ import javax.servlet.http.HttpServletRequest;
 
 public abstract class SignUpMVCControllerBase<UserDTO extends IUserDTO> {
 
-    private final SignUpController signUpController;
+    private final SignUpController<? super UserDTO> signUpController;
     private final String mailFromAddress;
     private final SignUpConfig config;
 
     @Autowired
-    public SignUpMVCControllerBase(SignUpController signUpController, @Value("${mailsender.from}") String mailFromAddress, SignUpConfig config) {
+    public SignUpMVCControllerBase(
+            SignUpController<? super UserDTO> signUpController,
+            @Value("${mailsender.from}") String mailFromAddress,
+            SignUpConfig config) {
         this.mailFromAddress = mailFromAddress;
         this.signUpController = signUpController;
         this.config = config;
@@ -43,7 +46,7 @@ public abstract class SignUpMVCControllerBase<UserDTO extends IUserDTO> {
             model.addObject("emailConfirmation", true);
             model.addObject("fromEmailAddress", mailFromAddress);
         }catch (Exception e){
-            System.out.println(e);
+            e.printStackTrace();
             model.addObject("emailAlreadyInUse", true);
             model.addObject("user", user);
         }
@@ -77,7 +80,7 @@ public abstract class SignUpMVCControllerBase<UserDTO extends IUserDTO> {
             model.addObject("recoverPassword", true);
             model.addObject("fromEmailAddress", mailFromAddress);
         }catch (Exception e){
-            System.out.println(e);
+            e.printStackTrace();
             model.addObject("userNotFound", true);
             model.addObject("email", email);
         }
@@ -109,12 +112,11 @@ public abstract class SignUpMVCControllerBase<UserDTO extends IUserDTO> {
 
     @RequestMapping(value = "/setPassword", method = RequestMethod.POST)
     public ModelAndView setPassword(@RequestParam("newPassword") String password) throws Exception {
-
         try{
             signUpController.setPassword(password);
             return new ModelAndView("dashboard");
         }catch (Exception e){
-            System.out.println(e);
+            e.printStackTrace();
             return new ModelAndView("register");
         }
 

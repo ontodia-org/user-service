@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SignUpConfig {
     @Value("${userservice.domain:}")
-    String domain;
+    public String domain;
 
     @Value("${userservice.view.register:user/register}")
     public String registerView;

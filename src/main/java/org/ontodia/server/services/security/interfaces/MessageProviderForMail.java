@@ -1,12 +1,13 @@
 package org.ontodia.server.services.security.interfaces;
 
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Optional;
+
 public interface MessageProviderForMail {
-    String getConfirmationSubject();
-    String getConfirmationMessage(UserDetailsWithTokens user, String link);
+    ComposedMessage formatMailStructure(UserDetails user, ComposedMessage content);
 
-    String getChangePasswordSubject();
-    String getChangePasswordMessage(UserDetailsWithTokens user, String link);
-
-    String getInvitationSubject();
-    String getInvitationMessage(UserDetailsWithTokens user, String link, String senderEmail);
+    ComposedMessage composeConfirmation(UserDetailsWithTokens user, String link);
+    ComposedMessage composeChangePassword(UserDetailsWithTokens user, String link);
+    ComposedMessage composeInvitation(UserDetailsWithTokens user, String link, String senderEmail);
 }
