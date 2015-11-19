@@ -134,10 +134,15 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
     }
 
     public void inviteUser(String userEmail, String senderEmail) throws MailException {
+        UserDetailsWithTokens userDetails = createUserByEmail(userEmail);
+        sendInvitationTo(userDetails, senderEmail);
+    }
+
+    public UserDetailsWithTokens createUserByEmail(String userEmail){
         UserDetailsWithTokens userDetails = userRepository.createUserFromEmail(userEmail);
         createInvitationToken(userDetails);
         userRepository.createUser(userDetails);
-        sendInvitationTo(userDetails, senderEmail);
+        return userDetails;
     }
 
     public void inviteExistingUser(String userEmail, ComposedMessage message) throws MailException {
@@ -151,7 +156,7 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
         }
     }
 
-    private void sendInvitationTo(UserDetailsWithTokens user, String senderEmail) throws MailException {
+    public void sendInvitationTo(UserDetailsWithTokens user, String senderEmail) throws MailException {
         ComposedMessage composedMessage = this.messageProvider.composeInvitation(
                 user, config.domain + config.invitationLink, senderEmail);
         sendMailMessage(user, composedMessage);
