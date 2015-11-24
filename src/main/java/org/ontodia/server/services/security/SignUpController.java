@@ -160,7 +160,6 @@ public abstract class SignUpController<DTOUserType extends IUserDTO> {
         ComposedMessage composedMessage = this.messageProvider.composeInvitation(
                 user, config.domain + config.invitationLink, senderEmail);
         sendMailMessage(user, composedMessage);
-        userRepository.updateUser(user);
     }
 
     private void sendMailMessage(UserDetails user, ComposedMessage message) {
